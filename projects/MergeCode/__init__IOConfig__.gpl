@@ -1,0 +1,255 @@
+'Created: 12/4/2013 9:30:07 AM
+Module INIT_IO_CONFIG
+
+	'''''''' default address setting '''''''
+	Public Dim DI_BASE As Integer = 10001
+	Public Dim DO_BASE As Integer = 13
+	
+	Public Dim DI_BASE_RIO As Integer = 20001
+	Public Dim DO_BASE_RIO As Integer = 20033
+	
+	Public Dim SYS_DO_INTERLOCK As Integer = 13
+	Public Dim SYS_DO_INTERLOCK_COUNT As Integer = 3
+	Public Dim SYS_DO_INTERLOCK_ENABLE As Integer = 16
+	
+	Public Dim SYS_DI_AUTO_MANUAL_SW As Integer = 10009
+	'''''''' default address setting '''''''
+	
+	Public Dim SYS_DO_RUN As Integer = 17
+	Public Dim SYS_DO_STOP As Integer = 18
+	Public Dim SYS_DO_ORIGIN_COMPLETED As Integer = 19
+	Public Dim SYS_DO_ALARM As Integer = 20
+	
+	Public Sub RobotIOUpdate()
+		Dim ex As Exception
+		
+		If Signal.DIO(18003) Or Signal.DIO(18004) Or Signal.DIO(18012) Then ' hard emo 
+			If errorHandler.getCurrentError() Is Nothing Then
+				ex = errorHandler.makeUserException(ERR_EMERGENCY)
+				errorHandler.handleError(ex)
+			End If
+		End If
+		
+		Signal.DIO(SYS_DO_RUN) = myRobot(0).isOpCommandRunningNow()
+		Signal.DIO(SYS_DO_STOP) = Not(myRobot(0).isOpCommandRunningNow())
+		Signal.DIO(SYS_DO_ORIGIN_COMPLETED) = myRobot(0).isOrgCompleted
+
+		If errorHandler.getCurrentError() Is Nothing Then
+				Signal.DIO(SYS_DO_ALARM) = False
+		Else
+				Signal.DIO(SYS_DO_ALARM) = True
+		End If
+		
+		IO_InterlockSignalOut(1,20045)
+		IO_InterlockSignalOut(2,20046)
+	End Sub
+	
+    Public Class VirtualIOMap
+		
+		'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+		'''''''''''''''''''''''''''' PRIVATE ''''''''''''''''''''''''''''
+		'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+	
+		Private Const MAX_DIO_BITCOUNT As Integer = 40
+		
+		Private virtualDI(MAX_DIO_BITCOUNT) As Boolean
+		Public ReadOnly Property vDI(addr As Integer) As Boolean
+			Get
+				If addr < 0 Or addr > MAX_DIO_BITCOUNT Then
+					Return False
+				Else
+					Return virtualDI(addr)
+				End If
+			End Get
+		End Property
+		
+		Private virtualDO(MAX_DIO_BITCOUNT) As Boolean
+		Public ReadOnly Property vDO(addr As Integer) As Boolean
+			Get
+				If addr < 0 Or addr > MAX_DIO_BITCOUNT Then
+					Return False
+				Else
+					Return virtualDO(addr)
+				End If
+			End Get
+		End Property
+		
+		
+		'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+		'''''''''''''''''''''''''''' PUBLIC '''''''''''''''''''''''''''''
+		'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+		
+		Public Sub New()
+			Dim i As Integer
+			For i = 0 To MAX_DIO_BITCOUNT
+				virtualDI(i) = False
+				virtualDO(i) = False
+			Next i
+		End Sub
+		
+		Public Sub loadVirtualDI()
+			
+		End Sub
+		
+		Public Sub loadVirtualDO()
+			
+		End Sub
+		
+		Public Sub setDOBit(addr As Integer, flag As Boolean)
+
+		End Sub
+		
+	End Class
+
+	Public Sub IO_InterlockSignalOut(stage As Integer, SensorOut As Integer)
+		Static Dim AxisTIndex As Integer = 0
+		Static Dim AxisEIndex As Integer = 0
+		Static Dim AxisLIndex As Integer = 0
+		Static Dim AxisUIndex As Integer = 0
+		
+		Dim Loc1 As Location
+		Dim ForwardPos As Double
+		Dim SidePos As Double
+		Dim CurForwardPos As Double
+		Dim CurSidePos As Double
+		
+		Dim i As Integer
+		Dim Result As Boolean = False
+		Dim CurrentPos As Location = Robot.where
+		
+		For i = 0 To myRobot(0).armCount - 1
+			Loc1 = myRobot(0).thePointDataManager.getLocation(stage+(theSystem.ArmTeachingPointInterval*i)).loc
+			
+			If Loc1.Type = 0 Then
+			Else
+				Loc1 = Loc1.KineSol(1)
+			End If
+		
+			
+			ForwardPos = loc1.X
+			SidePos = loc1.Y
+			CurForwardPos = CurrentPos.X
+			CurSidePos = CurrentPos.Y
+
+			
+			If sidePos - 5 < CurSidePos And CurSidePos < sidePos + 5 Then
+				If forwardPos < 0 Then
+					If ForwardPos - 10 < CurForwardPos And ForwardPos + 350 > CurForwardPos Then
+						Signal.DIO(SensorOut) = True
+						Exit Sub
+					End If
+				Else
+					If ForwardPos + 10 > CurForwardPos And ForwardPos + 350 < CurForwardPos Then
+						Signal.DIO(SensorOut) = True
+						Exit Sub
+					End If
+				End If
+			End If
+		Next i
+		
+		Signal.DIO(SensorOut) = Result
+		
+	End Sub
+	
+'	Public Sub IO_InterlockSignalOut(stage As Integer, SensorOut As Integer)
+'		Static Dim AxisTIndex As Integer = 0
+'		Static Dim AxisEIndex As Integer = 0
+'		Static Dim AxisLIndex As Integer = 0
+'		Static Dim AxisUIndex As Integer = 0
+'		
+'		Dim Loc1 As Location
+'		Dim Loc2 As Location
+'		Dim Pos1E,Pos2E As Double
+'		Dim Pos1T,Pos2T As Double
+'		Dim Pos1U,Pos2U As Double
+'		Dim Pos1L,Pos2L As Double
+'		
+'		Dim i As Integer
+'		Dim Result As Boolean = False
+'		Dim CurrentPos As Location = Robot.WhereAngles
+'		
+'		If AxisTIndex =  0 Then
+'			AxisTIndex = myRobot(0).controlAxis("T")
+'		End If
+'		
+'		If AxisEIndex =  0 Then
+'			AxisEIndex = myRobot(0).controlAxis("E")
+'		End If
+'		
+'		If AxisLIndex =  0 Then
+'			AxisLIndex = myRobot(0).controlAxis("L")
+'		End If
+'		
+'		If AxisUIndex =  0 Then
+'			AxisUIndex = myRobot(0).controlAxis("U")
+'		End If
+'		
+'		For i = 0 To myRobot(0).armCount - 1
+'			Loc1 = myRobot(0).thePointDataManager.getLocation(stage+(theSystem.ArmTeachingPointInterval*i)).loc
+'			
+'			If Loc1.Type = 0 Then
+'				Loc1 = Loc1.KineSol(1)
+'				Loc2 = myRobot(0).thePointDataManager.getLocation(stage+(theSystem.ArmTeachingPointInterval*i)+theSystem.ReadyTeachingPointInterval).loc
+'			Else
+'				Loc2 = Loc1
+'			End If
+'		
+'			If Loc2.Type = 0 Then
+'				Loc2 = Loc2.KineSol(1)
+'			End If
+'			
+'			If Loc1.angle(AxisEIndex) > Loc2.angle(AxisEIndex) Then
+'				Pos1E = Loc2.angle(AxisEIndex)
+'				Pos2E = Loc1.angle(AxisEIndex)
+'			Else
+'				Pos1E = Loc1.angle(AxisEIndex)
+'				Pos2E = Loc2.angle(AxisEIndex)
+'			End If
+'			
+'			If Loc1.angle(AxisTIndex) > Loc2.angle(AxisTIndex) Then
+'				Pos1T = Loc2.angle(AxisTIndex)
+'				Pos2T = Loc1.angle(AxisTIndex)
+'			Else
+'				Pos1T = Loc1.angle(AxisTIndex)
+'				Pos2T = Loc2.angle(AxisTIndex)
+'			End If
+'			
+'			If Loc1.angle(AxisUIndex) > Loc2.angle(AxisUIndex) Then
+'				Pos1U = Loc2.angle(AxisUIndex)
+'				Pos2U = Loc1.angle(AxisUIndex)
+'			Else
+'				Pos1U = Loc1.angle(AxisUIndex)
+'				Pos2U = Loc2.angle(AxisUIndex)
+'			End If
+'			
+'			If Loc1.angle(AxisLIndex) > Loc2.angle(AxisLIndex) Then
+'				Pos1L = Loc2.angle(AxisLIndex)
+'				Pos2L = Loc1.angle(AxisLIndex)
+'			Else
+'				Pos1L = Loc1.angle(AxisLIndex)
+'				Pos2L = Loc2.angle(AxisLIndex)
+'			End If
+'			
+'			If (Pos1E-5 < CurrentPos.Angle(AxisEIndex) And CurrentPos.Angle(AxisEIndex) < Pos2E+5) And (Pos1T-5 < CurrentPos.Angle(AxisTIndex) And CurrentPos.Angle(AxisTIndex) < Pos2T+5) Then
+'				
+'				If i = 1 Then
+'					If (Pos1U-5 < CurrentPos.Angle(AxisUIndex) And CurrentPos.Angle(AxisUIndex) < Pos2U+5) And CurrentPos.Angle(AxisUIndex) <> -180 Then
+'						Result = Result Or True
+'						Signal.DIO(SensorOut) = Result
+'						Exit Sub
+'					End If
+'				Else
+'					If (Pos1L-5 < CurrentPos.Angle(AxisLIndex) And CurrentPos.Angle(AxisLIndex) < Pos2L+5) And CurrentPos.Angle(AxisLIndex) <> -180 Then
+'						Result = Result Or True
+'						Signal.DIO(SensorOut) = Result
+'						Exit Sub
+'					End If
+'				End If
+'			End If
+'		Next i
+'		
+'		Signal.DIO(SensorOut) = Result
+'		
+'	End Sub
+	
+End Module

@@ -1,0 +1,58 @@
+'Created: 11/26/2013 5:18:49 PM
+Module INIT_ROBOT_CONFIG
+
+	Public Dim UseThreeCountErrorCode As Boolean = False
+	Public Dim ShowCommandLogToConsole As Boolean = True
+	Public Dim ResponseEarlyReturnMode As Boolean = False
+	Public Dim ContinuousMotionMode As Boolean = False
+	Public Const UseTP As Boolean = True
+	
+    Public Sub RobotConfig()
+	
+		ContinuousMotionMode = CBool(CInt(theSystem.getValue("ContinuousMotionMode","0")))
+		
+		cantapsIOCount = 1
+		cantapsIO(0) = New CantapsIOMap(1,theSystem.rioAddress(0),"8000",20001,20033)
+		
+		
+		theSystem.ORGBoxHeight = 400
+		theSystem.ORGBoxWidth = 400
+		
+		Dim newRobot As RNDRobot
+		robotCount = 1
+		
+		' ------------- robot1 config setting ----------- start
+		myRobot(0) = New RNDRobot(1)
+		
+		myRobot(0).robotType = SCARA_TYPE
+		myRobot(0).setRobotAxisName("TZELU")
+		myRobot(0).setTPAxisName("TZELU")
+		myRobot(0).setDynaxAxisName("TZELU")
+		
+		myRobot(0).setThePointDataManager(New PointDataManager("/flash/data/point1.dat"))
+		myRobot(0).setTheProfileManager(New ProfileManager("/flash/data/profile1.dat"))
+		myRobot(0).setTheZPosErrDetector(New ZPosErrDetector(10001))
+		myRobot(0).setTheBladeDeflectionDetector(New BladeDeflectionDetector(10003))
+		myRobot(0).isCanCrossMotion = True
+		myRobot(0).linkLength = 430
+		
+		protocolHandler.useEMOResetSignalIO = 20040
+		
+		Dim arm As RobotArm
+		arm = New RobotArm(1,4,3)
+		arm.armCenterDeg = -180
+		
+		arm.setGripSequence(1,New VaccumGripSequence(New InverseSingleAct(20033)),False)
+		arm.setFinger(1,"20001")
+		myRobot(0).setArm(arm)
+		
+		arm = New RobotArm(2,5,3)
+		arm.armCenterDeg = -180
+		
+		arm.setGripSequence(1,New VaccumGripSequence(New InverseSingleAct(20034)),False)
+		arm.setFinger(1,"20009")
+		myRobot(0).setArm(arm)
+		' ------------- robot1 config setting ----------- end
+		
+    End Sub 
+End Module

@@ -1,0 +1,17 @@
+Slot=1
+Pitch=0
+GetDownOffset=450
+GetUpOffset=500
+PutUpOffset=500
+PutDownOffset=450
+GetOffset=0
+PutOffset=0
+TeachingPointCountPerArm=2
+GripTypeIndex=1
+InSpecialSequence=
+OutSpecialSequence=
+DoubleteachingPoint=0
+MappingCrossCriteria=0
+MappingDoubleCriteria=0
+MappingWaferThickness=0
+MappingBaseSlotZPos=0
